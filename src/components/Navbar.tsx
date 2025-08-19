@@ -13,6 +13,8 @@ const Navbar = () => {
     { name: 'Beranda', path: '/' },
     { name: 'Produk', path: '/products' },
     { name: 'Kategori', path: '/categories' },
+    { name: 'Pelanggan', path: '/pelanggan' },
+    { name: 'Transaksi', path: '/transaksi' },
     { name: 'Tentang Kami', path: '/about' },
   ];
 

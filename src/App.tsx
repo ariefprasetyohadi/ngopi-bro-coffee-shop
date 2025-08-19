@@ -11,6 +11,8 @@ import Products from "./pages/Products";
 import Categories from "./pages/Categories";
 import Cart from "./pages/Cart";
 import About from "./pages/About";
+import Pelanggan from "./pages/Pelanggan";
+import Transaksi from "./pages/Transaksi";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/pelanggan" element={<Pelanggan />} />
+                <Route path="/transaksi" element={<Transaksi />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
