@@ -18,6 +18,10 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        coffee: "bg-gradient-button text-coffee-cream hover:bg-coffee-primary/90 shadow-coffee",
+        "coffee-outline": "border-2 border-coffee-primary text-coffee-primary bg-transparent hover:bg-coffee-primary hover:text-coffee-cream",
+        "coffee-secondary": "bg-coffee-secondary text-coffee-dark hover:bg-coffee-secondary/80",
+        hero: "bg-gradient-button text-coffee-cream hover:bg-coffee-primary/90 shadow-coffee font-bold",
       },
       size: {
         default: "h-10 px-4 py-2",

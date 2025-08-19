@@ -52,6 +52,13 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				coffee: {
+					primary: 'hsl(var(--coffee-primary))',
+					secondary: 'hsl(var(--coffee-secondary))',
+					accent: 'hsl(var(--coffee-accent))',
+					cream: 'hsl(var(--coffee-cream))',
+					dark: 'hsl(var(--coffee-dark))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -62,6 +69,15 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				}
+			},
+			backgroundImage: {
+				'gradient-hero': 'var(--gradient-hero)',
+				'gradient-card': 'var(--gradient-card)',
+				'gradient-button': 'var(--gradient-button)'
+			},
+			boxShadow: {
+				'coffee': 'var(--shadow-coffee)',
+				'card': 'var(--shadow-card)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
