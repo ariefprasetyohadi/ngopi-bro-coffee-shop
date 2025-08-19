@@ -16,6 +16,7 @@ const Navbar = () => {
     { name: 'Pelanggan', path: '/pelanggan' },
     { name: 'Transaksi', path: '/transaksi' },
     { name: 'Tentang Kami', path: '/about' },
+    { name: 'Login', path: '/login' },
   ];
 
   return (
