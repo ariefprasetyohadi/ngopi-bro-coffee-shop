@@ -1,44 +1,81 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Coffee, Snowflake, Zap, Heart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Categories = () => {
-  const categories = [
-    {
-      id: 'hot-coffee',
-      name: 'Kopi Panas',
-      description: 'Koleksi kopi panas klasik dan specialty yang menghangatkan',
-      icon: <Coffee className="h-12 w-12 text-coffee-primary" />,
-      items: ['Espresso', 'Americano', 'Cappuccino', 'Latte', 'Macchiato', 'Mocha'],
-      color: 'bg-gradient-to-br from-coffee-primary/10 to-coffee-accent/10'
-    },
-    {
-      id: 'cold-coffee',
-      name: 'Kopi Dingin',
-      description: 'Minuman kopi dingin yang menyegarkan untuk segala cuaca',
-      icon: <Snowflake className="h-12 w-12 text-coffee-primary" />,
-      items: ['Cold Brew', 'Iced Coffee', 'Frappé', 'Iced Latte', 'Affogato', 'Coffee Float'],
-      color: 'bg-gradient-to-br from-blue-100/50 to-coffee-secondary/20'
-    },
-    {
-      id: 'specialty',
-      name: 'Specialty Coffee',
-      description: 'Kreasi khusus barista dengan cita rasa unik dan premium',
-      icon: <Zap className="h-12 w-12 text-coffee-primary" />,
-      items: ['V60 Pour Over', 'Chemex', 'French Press', 'Aeropress', 'Siphon', 'Turkish Coffee'],
-      color: 'bg-gradient-to-br from-amber-100/50 to-coffee-secondary/20'
-    },
-    {
-      id: 'signature',
-      name: 'Signature Blend',
-      description: 'Racikan spesial Ngopi Bro yang tidak akan Anda temukan di tempat lain',
-      icon: <Heart className="h-12 w-12 text-coffee-primary" />,
-      items: ['Bro Special', 'Jakarta Blend', 'Nusantara Mix', 'Sunset Roast', 'Morning Glory', 'Night Owl'],
-      color: 'bg-gradient-to-br from-coffee-secondary/30 to-coffee-primary/10'
-    }
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const defaultCategoryIcons = [
+    <Coffee className="h-12 w-12 text-coffee-primary" />,
+    <Snowflake className="h-12 w-12 text-coffee-primary" />,
+    <Zap className="h-12 w-12 text-coffee-primary" />,
+    <Heart className="h-12 w-12 text-coffee-primary" />
   ];
+
+  const defaultColors = [
+    'bg-gradient-to-br from-coffee-primary/10 to-coffee-accent/10',
+    'bg-gradient-to-br from-blue-100/50 to-coffee-secondary/20',
+    'bg-gradient-to-br from-amber-100/50 to-coffee-secondary/20',
+    'bg-gradient-to-br from-coffee-secondary/30 to-coffee-primary/10'
+  ];
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('category')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        // Fallback to default categories if database is empty
+        setCategories([
+          {
+            id: 'hot-coffee',
+            category_name: 'Kopi Panas',
+            description: 'Koleksi kopi panas klasik dan specialty yang menghangatkan'
+          },
+          {
+            id: 'cold-coffee', 
+            category_name: 'Kopi Dingin',
+            description: 'Minuman kopi dingin yang menyegarkan untuk segala cuaca'
+          },
+          {
+            id: 'specialty',
+            category_name: 'Specialty Coffee', 
+            description: 'Kreasi khusus barista dengan cita rasa unik dan premium'
+          },
+          {
+            id: 'signature',
+            category_name: 'Signature Blend',
+            description: 'Racikan spesial Ngopi Bro yang tidak akan Anda temukan di tempat lain'
+          }
+        ]);
+        return;
+      }
+
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-coffee-primary text-xl">Loading categories...</div>
+      </div>
+    );
+  }
 
   const featuredBeans = [
     {
@@ -85,28 +122,28 @@ const Categories = () => {
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {categories.map((category) => (
-              <Card key={category.id} className={`${category.color} shadow-card hover:shadow-coffee transition-all duration-300 hover:scale-105 border-coffee-secondary/20`}>
+            {categories.map((category, index) => (
+              <Card key={category.id || index} className={`${defaultColors[index % defaultColors.length]} shadow-card hover:shadow-coffee transition-all duration-300 hover:scale-105 border-coffee-secondary/20`}>
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
-                    {category.icon}
+                    {defaultCategoryIcons[index % defaultCategoryIcons.length]}
                   </div>
-                  <CardTitle className="text-2xl text-coffee-dark">{category.name}</CardTitle>
+                  <CardTitle className="text-2xl text-coffee-dark">{category.category_name || 'Category'}</CardTitle>
                   <CardDescription className="text-coffee-accent/80 text-base">
-                    {category.description}
+                    {category.description || 'No description available'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-6">
-                    {category.items.map((item, index) => (
-                      <div key={index} className="bg-coffee-cream/50 rounded-lg p-2 text-center text-sm text-coffee-accent font-medium">
+                    {['Espresso', 'Americano', 'Cappuccino', 'Latte', 'Macchiato', 'Mocha'].map((item, itemIndex) => (
+                      <div key={itemIndex} className="bg-coffee-cream/50 rounded-lg p-2 text-center text-sm text-coffee-accent font-medium">
                         {item}
                       </div>
                     ))}
                   </div>
                   <Link to="/products">
                     <Button className="w-full bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream">
-                      Lihat Menu {category.name}
+                      Lihat Menu {category.category_name}
                     </Button>
                   </Link>
                 </CardContent>

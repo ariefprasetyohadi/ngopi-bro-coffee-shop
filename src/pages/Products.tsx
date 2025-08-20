@@ -1,76 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/contexts/CartContext';
+import { supabase } from '@/integrations/supabase/client';
 import espressoImage from '@/assets/espresso.jpg';
 import cappuccinoImage from '@/assets/cappuccino.jpg';
 import icedCoffeeImage from '@/assets/iced-coffee.jpg';
 
 const Products = () => {
-  const products: Product[] = [
-    {
-      id: '1',
-      name: 'Espresso Tradisional',
-      description: 'Kopi espresso murni dengan cita rasa kuat dan aroma yang menggugah selera. Dibuat dari biji kopi pilihan terbaik.',
-      price: 25000,
-      image: espressoImage
-    },
-    {
-      id: '2',
-      name: 'Cappuccino Premium',
-      description: 'Perpaduan sempurna espresso dengan susu steamed dan foam lembut. Disajikan dengan latte art yang cantik.',
-      price: 35000,
-      image: cappuccinoImage
-    },
-    {
-      id: '3',
-      name: 'Iced Coffee Special',
-      description: 'Kopi dingin yang menyegarkan dengan campuran cold brew dan susu. Perfect untuk cuaca panas.',
-      price: 30000,
-      image: icedCoffeeImage
-    },
-    {
-      id: '4',
-      name: 'Americano',
-      description: 'Espresso yang diperpanjang dengan air panas. Rasa kopi yang bold namun smooth di tenggorokan.',
-      price: 28000,
-      image: espressoImage
-    },
-    {
-      id: '5',
-      name: 'Latte Vanilla',
-      description: 'Kombinasi lembut espresso, steamed milk, dan sentuhan vanilla yang manis. Cocok untuk pemula.',
-      price: 38000,
-      image: cappuccinoImage
-    },
-    {
-      id: '6',
-      name: 'Cold Brew Original',
-      description: 'Kopi yang diseduh dengan metode cold brew selama 12 jam untuk menghasilkan rasa yang smooth dan less acidic.',
-      price: 32000,
-      image: icedCoffeeImage
-    },
-    {
-      id: '7',
-      name: 'Macchiato Caramel',
-      description: 'Espresso dengan sedikit steamed milk dan foam, ditambah siraman caramel yang manis di atasnya.',
-      price: 40000,
-      image: cappuccinoImage
-    },
-    {
-      id: '8',
-      name: 'Mocha Chocolate',
-      description: 'Perpaduan espresso, cokelat, dan steamed milk yang menghasilkan rasa kopi-cokelat yang lezat.',
-      price: 42000,
-      image: cappuccinoImage
-    },
-    {
-      id: '9',
-      name: 'Frappé Coffee',
-      description: 'Kopi dingin yang di-blend dengan es dan whipped cream. Tekstur creamy dan rasa yang menyegarkan.',
-      price: 45000,
-      image: icedCoffeeImage
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const defaultImages = [espressoImage, cappuccinoImage, icedCoffeeImage];
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('product')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        return;
+      }
+
+      const formattedProducts: Product[] = data.map((product, index) => ({
+        id: product.id.toString(),
+        name: product.product_name || 'Product',
+        description: product.description || 'No description available',
+        price: product.price || 0,
+        image: product.image || defaultImages[index % defaultImages.length]
+      }));
+
+      setProducts(formattedProducts);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-coffee-primary text-xl">Loading products...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

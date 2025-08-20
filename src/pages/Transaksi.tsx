@@ -1,53 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Download, Calendar, TrendingUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Transaction {
+  no: number;
+  date?: string;
+  action?: string;
+  quantity?: number;
+  subtotal?: number;
+  transaction_id: number;
+  product_id: number;
+  customer?: string;
+}
 
 const Transaksi = () => {
-  // Mock data - in real app this would come from database
-  const transactions = [
-    { 
-      id: 1, 
-      pelanggan: 'Budi Santoso', 
-      tanggal: '2025-08-19', 
-      total: 43000, 
-      status: 'Selesai',
-      items: ['Espresso', 'Croissant']
-    },
-    { 
-      id: 2, 
-      pelanggan: 'Ani Lestari', 
-      tanggal: '2025-08-19', 
-      total: 52000, 
-      status: 'Proses',
-      items: ['Es Kopi Susu Gula Aren', 'Brownies Coklat']
-    },
-    { 
-      id: 3, 
-      pelanggan: 'Rizky Ramadhan', 
-      tanggal: '2025-08-18', 
-      total: 25000, 
-      status: 'Selesai',
-      items: ['Kopi Tubruk']
-    },
-    { 
-      id: 4, 
-      pelanggan: 'Siti Aminah', 
-      tanggal: '2025-08-18', 
-      total: 32000, 
-      status: 'Batal',
-      items: ['Matcha Latte']
-    },
-    { 
-      id: 5, 
-      pelanggan: 'Andi Pratama', 
-      tanggal: '2025-08-17', 
-      total: 48000, 
-      status: 'Selesai',
-      items: ['Red Velvet Latte', 'Croissant']
-    },
-  ];
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('detail_transaction')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        return;
+      }
+
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-coffee-primary text-xl">Loading transactions...</div>
+      </div>
+    );
+  }
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -59,20 +61,20 @@ const Transaksi = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Selesai':
+      case 'completed':
         return <Badge className="bg-green-500 text-white">Selesai</Badge>;
-      case 'Proses':
-        return <Badge className="bg-coffee-primary text-coffee-cream">Proses</Badge>;
-      case 'Batal':
+      case 'pending':
+        return <Badge className="bg-coffee-primary text-coffee-cream">Pending</Badge>;
+      case 'cancelled':
         return <Badge variant="destructive">Batal</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const totalRevenue = transactions
-    .filter(t => t.status === 'Selesai')
-    .reduce((sum, t) => sum + t.total, 0);
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.subtotal || 0), 0);
+  const completedTransactions = transactions.filter(t => t.action === 'completed').length;
+  const pendingTransactions = transactions.filter(t => t.action === 'pending').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,7 +132,7 @@ const Transaksi = () => {
                 <div>
                   <p className="text-coffee-accent text-sm">Selesai</p>
                   <h3 className="text-2xl font-bold text-coffee-dark">
-                    {transactions.filter(t => t.status === 'Selesai').length}
+                    {completedTransactions}
                   </h3>
                 </div>
                 <div className="w-8 h-8 bg-green-500 rounded-full"></div>
@@ -141,7 +143,7 @@ const Transaksi = () => {
                 <div>
                   <p className="text-coffee-accent text-sm">Pending</p>
                   <h3 className="text-2xl font-bold text-coffee-dark">
-                    {transactions.filter(t => t.status === 'Proses').length}
+                    {pendingTransactions}
                   </h3>
                 </div>
                 <div className="w-8 h-8 bg-coffee-primary rounded-full"></div>
@@ -165,25 +167,25 @@ const Transaksi = () => {
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">#{transaction.id}</TableCell>
-                    <TableCell>{transaction.pelanggan}</TableCell>
-                    <TableCell>{new Date(transaction.tanggal).toLocaleDateString('id-ID')}</TableCell>
+                  <TableRow key={transaction.no}>
+                    <TableCell className="font-medium">#{transaction.transaction_id}</TableCell>
+                    <TableCell>{transaction.customer || 'No Customer'}</TableCell>
+                    <TableCell>{transaction.date ? new Date(transaction.date).toLocaleDateString('id-ID') : 'No Date'}</TableCell>
                     <TableCell>
                       <div className="max-w-xs">
                         <p className="text-sm text-coffee-accent truncate">
-                          {transaction.items.join(', ')}
+                          Product ID: {transaction.product_id}
                         </p>
                         <p className="text-xs text-coffee-accent/60">
-                          {transaction.items.length} item(s)
+                          Qty: {transaction.quantity || 0}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold text-coffee-primary">
-                      {formatRupiah(transaction.total)}
+                      {formatRupiah(transaction.subtotal || 0)}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(transaction.status)}
+                      {getStatusBadge(transaction.action || 'pending')}
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm">

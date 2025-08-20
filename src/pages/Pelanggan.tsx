@@ -1,18 +1,101 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Search, Filter } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { UserPlus, Search, Filter, Edit, Trash2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
+
+interface Customer {
+  id: number;
+  customer_id?: number;
+  customer_name?: string;
+  email?: string;
+  phone?: string;
+  status?: string;
+}
 
 const Pelanggan = () => {
-  // Mock data - in real app this would come from database
-  const customers = [
-    { id: 1, nama: 'Budi Santoso', email: 'budi@gmail.com', telepon: '081234567890', totalTransaksi: 5 },
-    { id: 2, nama: 'Ani Lestari', email: 'ani@yahoo.com', telepon: '081298765432', totalTransaksi: 3 },
-    { id: 3, nama: 'Rizky Ramadhan', email: 'rizky@outlook.com', telepon: '081377788899', totalTransaksi: 8 },
-    { id: 4, nama: 'Siti Aminah', email: 'siti@gmail.com', telepon: '081299988877', totalTransaksi: 2 },
-    { id: 5, nama: 'Andi Pratama', email: 'andi@gmail.com', telepon: '081255544433', totalTransaksi: 6 },
-  ];
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customer')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching customers:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch customers",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditCustomer = async () => {
+    if (!editingCustomer) return;
+
+    try {
+      const { error } = await supabase
+        .from('customer')
+        .update({
+          customer_name: editingCustomer.customer_name,
+          email: editingCustomer.email,
+          phone: editingCustomer.phone,
+          status: editingCustomer.status
+        })
+        .eq('id', editingCustomer.id);
+
+      if (error) {
+        console.error('Error updating customer:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update customer",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Customer updated successfully"
+      });
+
+      fetchCustomers();
+      setEditDialogOpen(false);
+      setEditingCustomer(null);
+    } catch (error) {
+      console.error('Error updating customer:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-coffee-primary text-xl">Loading customers...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,29 +156,102 @@ const Pelanggan = () => {
                 {customers.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.id}</TableCell>
-                    <TableCell>{customer.nama}</TableCell>
-                    <TableCell className="text-coffee-accent">{customer.email}</TableCell>
-                    <TableCell>{customer.telepon}</TableCell>
+                    <TableCell>{customer.customer_name || 'No Name'}</TableCell>
+                    <TableCell className="text-coffee-accent">{customer.email || 'No Email'}</TableCell>
+                    <TableCell>{customer.phone || 'No Phone'}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">
-                        {customer.totalTransaksi} transaksi
+                        0 transaksi
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        variant={customer.totalTransaksi >= 5 ? "default" : "outline"}
-                        className={customer.totalTransaksi >= 5 ? "bg-coffee-primary text-coffee-cream" : ""}
+                        variant={customer.status === 'VIP' ? "default" : "outline"}
+                        className={customer.status === 'VIP' ? "bg-coffee-primary text-coffee-cream" : ""}
                       >
-                        {customer.totalTransaksi >= 5 ? 'VIP' : 'Regular'}
+                        {customer.status || 'Regular'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
+                        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setEditingCustomer(customer)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Pelanggan</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">Nama</label>
+                                <Input
+                                  value={editingCustomer?.customer_name || ''}
+                                  onChange={(e) => setEditingCustomer(prev => 
+                                    prev ? { ...prev, customer_name: e.target.value } : null
+                                  )}
+                                  placeholder="Nama pelanggan"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Email</label>
+                                <Input
+                                  type="email"
+                                  value={editingCustomer?.email || ''}
+                                  onChange={(e) => setEditingCustomer(prev => 
+                                    prev ? { ...prev, email: e.target.value } : null
+                                  )}
+                                  placeholder="Email pelanggan"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Telepon</label>
+                                <Input
+                                  value={editingCustomer?.phone || ''}
+                                  onChange={(e) => setEditingCustomer(prev => 
+                                    prev ? { ...prev, phone: e.target.value } : null
+                                  )}
+                                  placeholder="Nomor telepon"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Status</label>
+                                <Input
+                                  value={editingCustomer?.status || ''}
+                                  onChange={(e) => setEditingCustomer(prev => 
+                                    prev ? { ...prev, status: e.target.value } : null
+                                  )}
+                                  placeholder="Status pelanggan"
+                                />
+                              </div>
+                              <div className="flex gap-2 pt-4">
+                                <Button 
+                                  onClick={handleEditCustomer}
+                                  className="bg-coffee-primary hover:bg-coffee-primary/90"
+                                >
+                                  Simpan
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => {
+                                    setEditDialogOpen(false);
+                                    setEditingCustomer(null);
+                                  }}
+                                >
+                                  Batal
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button variant="outline" size="sm" className="text-coffee-secondary border-coffee-secondary hover:bg-coffee-secondary hover:text-white">
-                          Hapus
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -113,14 +269,12 @@ const Pelanggan = () => {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
               <h3 className="text-2xl font-bold text-coffee-primary">
-                {customers.filter(c => c.totalTransaksi >= 5).length}
+                {customers.filter(c => c.status === 'VIP').length}
               </h3>
               <p className="text-coffee-accent">Pelanggan VIP</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
-              <h3 className="text-2xl font-bold text-coffee-primary">
-                {customers.reduce((sum, c) => sum + c.totalTransaksi, 0)}
-              </h3>
+              <h3 className="text-2xl font-bold text-coffee-primary">0</h3>
               <p className="text-coffee-accent">Total Transaksi</p>
             </div>
           </div>
