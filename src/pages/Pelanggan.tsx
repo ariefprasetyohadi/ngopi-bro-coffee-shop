@@ -31,7 +31,7 @@ const Pelanggan = () => {
   const fetchCustomers = async () => {
     try {
       const { data, error } = await supabase
-        .from('customer')
+        .from('pelanggan' as any)
         .select('*');
 
       if (error) {
@@ -44,7 +44,16 @@ const Pelanggan = () => {
         return;
       }
 
-      setCustomers(data || []);
+      const formattedCustomers: Customer[] = data.map((customer: any) => ({
+        id: customer.id,
+        customer_id: customer.id,
+        customer_name: customer.nama_pelanggan,
+        email: customer.email,
+        phone: customer.telepon,
+        status: customer.status || 'Regular'
+      }));
+
+      setCustomers(formattedCustomers);
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
@@ -57,11 +66,11 @@ const Pelanggan = () => {
 
     try {
       const { error } = await supabase
-        .from('customer')
+        .from('pelanggan' as any)
         .update({
-          customer_name: editingCustomer.customer_name,
+          nama_pelanggan: editingCustomer.customer_name,
           email: editingCustomer.email,
-          phone: editingCustomer.phone,
+          telepon: editingCustomer.phone,
           status: editingCustomer.status
         })
         .eq('id', editingCustomer.id);

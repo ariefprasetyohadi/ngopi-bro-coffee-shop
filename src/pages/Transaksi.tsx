@@ -6,14 +6,14 @@ import { Eye, Download, Calendar, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Transaction {
-  no: number;
-  date?: string;
-  action?: string;
-  quantity?: number;
+  id: number;
+  tanggal?: string;
+  aksi?: string;
+  jumlah?: number;
   subtotal?: number;
   transaction_id: number;
-  product_id: number;
-  customer?: string;
+  nama_produk?: string;
+  pelanggan?: string;
 }
 
 const Transaksi = () => {
@@ -27,7 +27,7 @@ const Transaksi = () => {
   const fetchTransactions = async () => {
     try {
       const { data, error } = await supabase
-        .from('detail_transaction')
+        .from('transaksi' as any)
         .select('*');
 
       if (error) {
@@ -35,7 +35,18 @@ const Transaksi = () => {
         return;
       }
 
-      setTransactions(data || []);
+      const formattedTransactions: Transaction[] = data.map((transaction: any) => ({
+        id: transaction.id,
+        transaction_id: transaction.id,
+        nama_produk: transaction.nama_produk,
+        pelanggan: transaction.pelanggan,
+        tanggal: transaction.tanggal,
+        jumlah: transaction.jumlah,
+        subtotal: transaction.subtotal,
+        aksi: transaction.aksi || 'completed'
+      }));
+
+      setTransactions(formattedTransactions);
     } catch (error) {
       console.error('Error fetching transactions:', error);
     } finally {
@@ -73,8 +84,8 @@ const Transaksi = () => {
   };
 
   const totalRevenue = transactions.reduce((sum, t) => sum + (t.subtotal || 0), 0);
-  const completedTransactions = transactions.filter(t => t.action === 'completed').length;
-  const pendingTransactions = transactions.filter(t => t.action === 'pending').length;
+  const completedTransactions = transactions.filter(t => t.aksi === 'completed').length;
+  const pendingTransactions = transactions.filter(t => t.aksi === 'pending').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -167,17 +178,17 @@ const Transaksi = () => {
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction) => (
-                  <TableRow key={transaction.no}>
+                  <TableRow key={transaction.id}>
                     <TableCell className="font-medium">#{transaction.transaction_id}</TableCell>
-                    <TableCell>{transaction.customer || 'No Customer'}</TableCell>
-                    <TableCell>{transaction.date ? new Date(transaction.date).toLocaleDateString('id-ID') : 'No Date'}</TableCell>
+                    <TableCell>{transaction.pelanggan || 'No Customer'}</TableCell>
+                    <TableCell>{transaction.tanggal ? new Date(transaction.tanggal).toLocaleDateString('id-ID') : 'No Date'}</TableCell>
                     <TableCell>
                       <div className="max-w-xs">
                         <p className="text-sm text-coffee-accent truncate">
-                          Product ID: {transaction.product_id}
+                          {transaction.nama_produk || 'No Product'}
                         </p>
                         <p className="text-xs text-coffee-accent/60">
-                          Qty: {transaction.quantity || 0}
+                          Qty: {transaction.jumlah || 0}
                         </p>
                       </div>
                     </TableCell>
@@ -185,7 +196,7 @@ const Transaksi = () => {
                       {formatRupiah(transaction.subtotal || 0)}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(transaction.action || 'pending')}
+                      {getStatusBadge(transaction.aksi || 'pending')}
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm">

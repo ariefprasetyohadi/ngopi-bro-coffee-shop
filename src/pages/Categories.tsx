@@ -30,38 +30,65 @@ const Categories = () => {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from('category')
+        .from('kategori' as any)
         .select('*');
 
       if (error) {
         console.error('Error fetching categories:', error);
-        // Fallback to default categories if database is empty
+        // Fallback to default categories if database is empty  
         setCategories([
           {
             id: 'hot-coffee',
-            category_name: 'Kopi Panas',
+            nama_kategori: 'Kopi Panas',
             description: 'Koleksi kopi panas klasik dan specialty yang menghangatkan'
           },
           {
             id: 'cold-coffee', 
-            category_name: 'Kopi Dingin',
+            nama_kategori: 'Kopi Dingin',
             description: 'Minuman kopi dingin yang menyegarkan untuk segala cuaca'
           },
           {
             id: 'specialty',
-            category_name: 'Specialty Coffee', 
+            nama_kategori: 'Specialty Coffee', 
             description: 'Kreasi khusus barista dengan cita rasa unik dan premium'
           },
           {
             id: 'signature',
-            category_name: 'Signature Blend',
+            nama_kategori: 'Signature Blend',
             description: 'Racikan spesial Ngopi Bro yang tidak akan Anda temukan di tempat lain'
           }
         ]);
         return;
       }
 
-      setCategories(data || []);
+      const formattedCategories = data.map((category: any) => ({
+        id: category.id,
+        nama_kategori: category.nama_kategori,
+        description: category.nama_kategori + ' - Berbagai pilihan kopi berkualitas'
+      }));
+
+      setCategories(formattedCategories.length > 0 ? formattedCategories : [
+        {
+          id: 'hot-coffee',
+          nama_kategori: 'Kopi Panas',
+          description: 'Koleksi kopi panas klasik dan specialty yang menghangatkan'
+        },
+        {
+          id: 'cold-coffee', 
+          nama_kategori: 'Kopi Dingin',
+          description: 'Minuman kopi dingin yang menyegarkan untuk segala cuaca'
+        },
+        {
+          id: 'specialty',
+          nama_kategori: 'Specialty Coffee', 
+          description: 'Kreasi khusus barista dengan cita rasa unik dan premium'
+        },
+        {
+          id: 'signature',
+          nama_kategori: 'Signature Blend',
+          description: 'Racikan spesial Ngopi Bro yang tidak akan Anda temukan di tempat lain'
+        }
+      ]);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
@@ -128,7 +155,7 @@ const Categories = () => {
                   <div className="flex justify-center mb-4">
                     {defaultCategoryIcons[index % defaultCategoryIcons.length]}
                   </div>
-                  <CardTitle className="text-2xl text-coffee-dark">{category.category_name || 'Category'}</CardTitle>
+                  <CardTitle className="text-2xl text-coffee-dark">{category.nama_kategori || 'Category'}</CardTitle>
                   <CardDescription className="text-coffee-accent/80 text-base">
                     {category.description || 'No description available'}
                   </CardDescription>
@@ -143,7 +170,7 @@ const Categories = () => {
                   </div>
                   <Link to="/products">
                     <Button className="w-full bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream">
-                      Lihat Menu {category.category_name}
+                      Lihat Menu {category.nama_kategori}
                     </Button>
                   </Link>
                 </CardContent>

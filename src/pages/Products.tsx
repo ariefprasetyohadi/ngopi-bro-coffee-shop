@@ -19,7 +19,7 @@ const Products = () => {
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
-        .from('product')
+        .from('produk' as any)
         .select('*');
 
       if (error) {
@@ -27,11 +27,11 @@ const Products = () => {
         return;
       }
 
-      const formattedProducts: Product[] = data.map((product, index) => ({
-        id: product.id.toString(),
-        name: product.product_name || 'Product',
-        description: product.description || 'No description available',
-        price: product.price || 0,
+      const formattedProducts: Product[] = data.map((product: any, index: number) => ({
+        id: product.id?.toString() || `product-${index}`,
+        name: product.nama_produk || 'Product',  
+        description: product.deskripsi || 'No description available',
+        price: product.harga || 0,
         image: product.image || defaultImages[index % defaultImages.length]
       }));
 
