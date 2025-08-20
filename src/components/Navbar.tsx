@@ -11,7 +11,7 @@ const Navbar = () => {
 
   const navItems = [
     { name: 'Beranda', path: '/' },
-    { name: 'Produk', path: '/products' },
+    { name: 'Produk', path: '/product' },
     { name: 'Kategori', path: '/categories' },
     { name: 'Pelanggan', path: '/pelanggan' },
     { name: 'Transaksi', path: '/transaksi' },
