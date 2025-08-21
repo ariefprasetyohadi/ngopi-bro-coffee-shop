@@ -64,7 +64,21 @@ const Products = () => {
         return;
       }
 
-      setCategories((data as any) || []);
+      // Custom order: Hot Coffee, Cold Coffee, Main Course, Desert, Merchandise
+      const customOrder = ['Hot Coffee', 'Cold Coffee', 'Main Course', 'Desert', 'Merchandise'];
+      const sortedCategories = (data as any[] || []).sort((a, b) => {
+        const indexA = customOrder.indexOf(a.nama_kategori);
+        const indexB = customOrder.indexOf(b.nama_kategori);
+        
+        // If category not in custom order, put at end
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        
+        return indexA - indexB;
+      });
+
+      setCategories(sortedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
