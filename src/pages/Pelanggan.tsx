@@ -19,6 +19,8 @@ interface Customer {
 
 const Pelanggan = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -54,10 +56,22 @@ const Pelanggan = () => {
       }));
 
       setCustomers(formattedCustomers);
+      setFilteredCustomers(formattedCustomers);
     } catch (error) {
       console.error('Error fetching customers:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusFilter = (status: string) => {
+    setSelectedStatus(status);
+    if (status === 'all') {
+      setFilteredCustomers(customers);
+    } else {
+      setFilteredCustomers(customers.filter(customer => 
+        (customer.status || 'Regular').toLowerCase() === status.toLowerCase()
+      ));
     }
   };
 
@@ -141,10 +155,29 @@ const Pelanggan = () => {
                 className="w-full pl-10 pr-4 py-2 border border-coffee-accent/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-coffee-primary"
               />
             </div>
-            <Button variant="outline" className="border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant={selectedStatus === 'all' ? 'default' : 'outline'}
+                onClick={() => handleStatusFilter('all')}
+                className={selectedStatus === 'all' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream'}
+              >
+                Semua
+              </Button>
+              <Button 
+                variant={selectedStatus === 'regular' ? 'default' : 'outline'}
+                onClick={() => handleStatusFilter('regular')}
+                className={selectedStatus === 'regular' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream'}
+              >
+                Regular
+              </Button>
+              <Button 
+                variant={selectedStatus === 'vip' ? 'default' : 'outline'}
+                onClick={() => handleStatusFilter('vip')}
+                className={selectedStatus === 'vip' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream'}
+              >
+                VIP
+              </Button>
+            </div>
           </div>
 
           {/* Customer Table */}
@@ -156,23 +189,17 @@ const Pelanggan = () => {
                   <TableHead>Nama</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Telepon</TableHead>
-                  <TableHead>Total Transaksi</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {filteredCustomers.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.id}</TableCell>
                     <TableCell>{customer.customer_name || 'No Name'}</TableCell>
                     <TableCell className="text-coffee-accent">{customer.email || 'No Email'}</TableCell>
                     <TableCell>{customer.phone || 'No Phone'}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        0 transaksi
-                      </Badge>
-                    </TableCell>
                     <TableCell>
                       <Badge 
                         variant={customer.status === 'VIP' ? "default" : "outline"}
@@ -278,13 +305,15 @@ const Pelanggan = () => {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
               <h3 className="text-2xl font-bold text-coffee-primary">
-                {customers.filter(c => c.status === 'VIP').length}
+                {customers.filter(c => (c.status || '').toLowerCase() === 'vip').length}
               </h3>
               <p className="text-coffee-accent">Pelanggan VIP</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
-              <h3 className="text-2xl font-bold text-coffee-primary">0</h3>
-              <p className="text-coffee-accent">Total Transaksi</p>
+              <h3 className="text-2xl font-bold text-coffee-primary">
+                {customers.filter(c => (c.status || '').toLowerCase() === 'regular').length}
+              </h3>
+              <p className="text-coffee-accent">Pelanggan Regular</p>
             </div>
           </div>
         </div>

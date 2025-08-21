@@ -2,23 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Download, Calendar, TrendingUp } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Filter, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Transaction {
   id: number;
-  tanggal?: string;
-  aksi?: string;
-  jumlah?: number;
+  transaction_id?: number;
+  pelanggan_id?: number;
+  product_name?: string;
+  quantity?: number;
   subtotal?: number;
-  transaction_id: number;
-  nama_produk?: string;
-  pelanggan?: string;
+  date?: string;
+  aksi?: string;
 }
 
 const Transaksi = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingStatus, setEditingStatus] = useState<{ [key: number]: string }>({});
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchTransactions();
@@ -32,25 +36,79 @@ const Transaksi = () => {
 
       if (error) {
         console.error('Error fetching transactions:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch transactions",
+          variant: "destructive"
+        });
         return;
       }
 
       const formattedTransactions: Transaction[] = data.map((transaction: any) => ({
         id: transaction.id,
         transaction_id: transaction.id,
-        nama_produk: transaction.nama_produk,
-        pelanggan: transaction.pelanggan,
-        tanggal: transaction.tanggal,
-        jumlah: transaction.jumlah,
-        subtotal: transaction.subtotal,
-        aksi: transaction.aksi || 'completed'
+        pelanggan_id: transaction.pelanggan_id,
+        product_name: 'Product ' + (transaction.produk_id || 'Unknown'),
+        quantity: transaction.Jumlah || 0,
+        subtotal: transaction.subtotal || 0,
+        date: transaction.tanggal || new Date().toISOString().split('T')[0],
+        aksi: transaction.aksi || 'Pending'
       }));
 
       setTransactions(formattedTransactions);
+      
+      // Initialize editing status
+      const initialStatus: { [key: number]: string } = {};
+      formattedTransactions.forEach(transaction => {
+        initialStatus[transaction.id] = transaction.aksi || 'Pending';
+      });
+      setEditingStatus(initialStatus);
     } catch (error) {
       console.error('Error fetching transactions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusChange = (transactionId: number, newStatus: string) => {
+    setEditingStatus(prev => ({
+      ...prev,
+      [transactionId]: newStatus
+    }));
+  };
+
+  const handleSaveTransaction = async (transactionId: number) => {
+    try {
+      const { error } = await supabase
+        .from('transaksi' as any)
+        .update({ aksi: editingStatus[transactionId] })
+        .eq('id', transactionId);
+
+      if (error) {
+        console.error('Error updating transaction:', error);
+        toast({
+          title: "Error",
+          description: "Gagal mengupdate status transaksi",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Status transaksi berhasil diupdate"
+      });
+
+      // Update local state
+      setTransactions(prev => 
+        prev.map(transaction => 
+          transaction.id === transactionId 
+            ? { ...transaction, aksi: editingStatus[transactionId] }
+            : transaction
+        )
+      );
+    } catch (error) {
+      console.error('Error updating transaction:', error);
     }
   };
 
@@ -61,31 +119,6 @@ const Transaksi = () => {
       </div>
     );
   }
-
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-500 text-white">Selesai</Badge>;
-      case 'pending':
-        return <Badge className="bg-coffee-primary text-coffee-cream">Pending</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">Batal</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  const totalRevenue = transactions.reduce((sum, t) => sum + (t.subtotal || 0), 0);
-  const completedTransactions = transactions.filter(t => t.aksi === 'completed').length;
-  const pendingTransactions = transactions.filter(t => t.aksi === 'pending').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,18 +131,8 @@ const Transaksi = () => {
                 Data Transaksi
               </h1>
               <p className="text-xl text-coffee-cream/90">
-                Pantau semua transaksi penjualan kopi
+                Kelola semua transaksi penjualan Ngopi Bro
               </p>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="outline" className="border-coffee-cream text-coffee-cream hover:bg-coffee-cream hover:text-coffee-primary">
-                <Calendar className="h-4 w-4 mr-2" />
-                Filter Tanggal
-              </Button>
-              <Button className="bg-coffee-cream text-coffee-dark hover:bg-coffee-cream/90">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
             </div>
           </div>
         </div>
@@ -118,48 +141,20 @@ const Transaksi = () => {
       {/* Content Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow-coffee">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-coffee-accent text-sm">Total Transaksi</p>
-                  <h3 className="text-2xl font-bold text-coffee-dark">{transactions.length}</h3>
-                </div>
-                <TrendingUp className="h-8 w-8 text-coffee-primary" />
-              </div>
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-coffee-accent h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Cari transaksi..."
+                className="w-full pl-10 pr-4 py-2 border border-coffee-accent/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-coffee-primary"
+              />
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-coffee">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-coffee-accent text-sm">Pendapatan</p>
-                  <h3 className="text-xl font-bold text-coffee-dark">{formatRupiah(totalRevenue)}</h3>
-                </div>
-                <TrendingUp className="h-8 w-8 text-green-500" />
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-coffee">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-coffee-accent text-sm">Selesai</p>
-                  <h3 className="text-2xl font-bold text-coffee-dark">
-                    {completedTransactions}
-                  </h3>
-                </div>
-                <div className="w-8 h-8 bg-green-500 rounded-full"></div>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-coffee">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-coffee-accent text-sm">Pending</p>
-                  <h3 className="text-2xl font-bold text-coffee-dark">
-                    {pendingTransactions}
-                  </h3>
-                </div>
-                <div className="w-8 h-8 bg-coffee-primary rounded-full"></div>
-              </div>
-            </div>
+            <Button variant="outline" className="border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
           </div>
 
           {/* Transaction Table */}
@@ -168,10 +163,11 @@ const Transaksi = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Pelanggan</TableHead>
+                  <TableHead>ID Pelanggan</TableHead>
+                  <TableHead>Produk</TableHead>
+                  <TableHead>Jumlah</TableHead>
+                  <TableHead>Subtotal</TableHead>
                   <TableHead>Tanggal</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Aksi</TableHead>
                 </TableRow>
@@ -179,34 +175,68 @@ const Transaksi = () => {
               <TableBody>
                 {transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">#{transaction.transaction_id}</TableCell>
-                    <TableCell>{transaction.pelanggan || 'No Customer'}</TableCell>
-                    <TableCell>{transaction.tanggal ? new Date(transaction.tanggal).toLocaleDateString('id-ID') : 'No Date'}</TableCell>
+                    <TableCell className="font-medium">{transaction.transaction_id}</TableCell>
+                    <TableCell>{transaction.pelanggan_id || 'N/A'}</TableCell>
+                    <TableCell>{transaction.product_name}</TableCell>
+                    <TableCell>{transaction.quantity}</TableCell>
+                    <TableCell>Rp {transaction.subtotal?.toLocaleString('id-ID')}</TableCell>
+                    <TableCell>{transaction.date}</TableCell>
                     <TableCell>
-                      <div className="max-w-xs">
-                        <p className="text-sm text-coffee-accent truncate">
-                          {transaction.nama_produk || 'No Product'}
-                        </p>
-                        <p className="text-xs text-coffee-accent/60">
-                          Qty: {transaction.jumlah || 0}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold text-coffee-primary">
-                      {formatRupiah(transaction.subtotal || 0)}
+                      <Select 
+                        value={editingStatus[transaction.id] || 'Pending'} 
+                        onValueChange={(value) => handleStatusChange(transaction.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Selesai">Selesai</SelectItem>
+                          <SelectItem value="Batal">Batal</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(transaction.aksi || 'pending')}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4" />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleSaveTransaction(transaction.id)}
+                        className="bg-coffee-primary text-coffee-cream hover:bg-coffee-primary/90"
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Simpan
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mt-8">
+            <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
+              <h3 className="text-2xl font-bold text-coffee-primary">{transactions.length}</h3>
+              <p className="text-coffee-accent">Total Transaksi</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
+              <h3 className="text-2xl font-bold text-coffee-primary">
+                {transactions.filter(t => t.aksi === 'Selesai').length}
+              </h3>
+              <p className="text-coffee-accent">Transaksi Selesai</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
+              <h3 className="text-2xl font-bold text-coffee-primary">
+                {transactions.filter(t => t.aksi === 'Pending').length}
+              </h3>
+              <p className="text-coffee-accent">Transaksi Pending</p>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
+              <h3 className="text-2xl font-bold text-coffee-primary">
+                Rp {transactions.reduce((sum, t) => sum + (t.subtotal || 0), 0).toLocaleString('id-ID')}
+              </h3>
+              <p className="text-coffee-accent">Total Pendapatan</p>
+            </div>
           </div>
         </div>
       </section>

@@ -81,7 +81,7 @@ const Home = () => {
           <p className="text-xl md:text-2xl mb-8 text-coffee-cream/90 max-w-2xl mx-auto">
             Temukan cita rasa kopi terbaik Indonesia di tempat yang nyaman dan hangat
           </p>
-          <Link to="/products">
+          <Link to="/product">
             <Button size="lg" className="bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream font-bold text-lg px-8 py-4 shadow-coffee">
               Pesan Sekarang
             </Button>
@@ -150,7 +150,7 @@ const Home = () => {
                   <div className="text-2xl font-bold text-coffee-primary mb-4">
                     {formatPrice(product.price)}
                   </div>
-                  <Link to="/products">
+                  <Link to="/product">
                     <Button className="w-full bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream">
                       Lihat Detail
                     </Button>
@@ -160,13 +160,6 @@ const Home = () => {
             ))}
           </div>
 
-          <div className="text-center mt-12">
-            <Link to="/products">
-              <Button size="lg" variant="outline" className="border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-coffee-cream">
-                Lihat Semua Menu
-              </Button>
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -179,9 +172,9 @@ const Home = () => {
           <p className="text-xl text-coffee-cream/90 mb-8">
             Bergabunglah dengan komunitas pecinta kopi Ngopi Bro dan rasakan pengalaman ngopi yang tak terlupakan
           </p>
-          <Link to="/products">
+          <Link to="/cart">
             <Button size="lg" className="bg-coffee-cream text-coffee-primary hover:bg-coffee-cream/90 font-bold text-lg px-8 py-4">
-              Mulai Order Sekarang
+              Cek Keranjang
             </Button>
           </Link>
         </div>

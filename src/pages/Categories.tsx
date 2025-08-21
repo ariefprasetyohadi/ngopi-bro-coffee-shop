@@ -29,66 +29,37 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: categoriesData, error: categoriesError } = await supabase
         .from('kategori' as any)
         .select('*');
 
-      if (error) {
-        console.error('Error fetching categories:', error);
-        // Fallback to default categories if database is empty  
-        setCategories([
-          {
-            id: 'hot-coffee',
-            nama_kategori: 'Kopi Panas',
-            description: 'Koleksi kopi panas klasik dan specialty yang menghangatkan'
-          },
-          {
-            id: 'cold-coffee', 
-            nama_kategori: 'Kopi Dingin',
-            description: 'Minuman kopi dingin yang menyegarkan untuk segala cuaca'
-          },
-          {
-            id: 'specialty',
-            nama_kategori: 'Specialty Coffee', 
-            description: 'Kreasi khusus barista dengan cita rasa unik dan premium'
-          },
-          {
-            id: 'signature',
-            nama_kategori: 'Signature Blend',
-            description: 'Racikan spesial Ngopi Bro yang tidak akan Anda temukan di tempat lain'
-          }
-        ]);
+      if (categoriesError) {
+        console.error('Error fetching categories:', categoriesError);
         return;
       }
 
-      const formattedCategories = data.map((category: any) => ({
-        id: category.id,
-        nama_kategori: category.nama_kategori,
-        description: category.nama_kategori + ' - Berbagai pilihan kopi berkualitas'
-      }));
+      // Fetch products for each category
+      const { data: productsData, error: productsError } = await supabase
+        .from('produk' as any)
+        .select('id, nama_produk, kategori_id');
 
-      setCategories(formattedCategories.length > 0 ? formattedCategories : [
-        {
-          id: 'hot-coffee',
-          nama_kategori: 'Kopi Panas',
-          description: 'Koleksi kopi panas klasik dan specialty yang menghangatkan'
-        },
-        {
-          id: 'cold-coffee', 
-          nama_kategori: 'Kopi Dingin',
-          description: 'Minuman kopi dingin yang menyegarkan untuk segala cuaca'
-        },
-        {
-          id: 'specialty',
-          nama_kategori: 'Specialty Coffee', 
-          description: 'Kreasi khusus barista dengan cita rasa unik dan premium'
-        },
-        {
-          id: 'signature',
-          nama_kategori: 'Signature Blend',
-          description: 'Racikan spesial Ngopi Bro yang tidak akan Anda temukan di tempat lain'
-        }
-      ]);
+      if (productsError) {
+        console.error('Error fetching products:', productsError);
+        return;
+      }
+
+      const formattedCategories = categoriesData.map((category: any) => {
+        const categoryProducts = productsData.filter((product: any) => product.kategori_id === category.id);
+        
+        return {
+          id: category.id,
+          nama_kategori: category.nama_kategori,
+          description: category.deskripsi_kategori || `${category.nama_kategori} - Berbagai pilihan kopi berkualitas`,
+          products: categoryProducts.map((product: any) => product.nama_produk).slice(0, 6) // Limit to 6 products
+        };
+      });
+
+      setCategories(formattedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
@@ -162,13 +133,13 @@ const Categories = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-6">
-                    {['Espresso', 'Americano', 'Cappuccino', 'Latte', 'Macchiato', 'Mocha'].map((item, itemIndex) => (
+                    {((category as any).products || ['Espresso', 'Americano', 'Cappuccino', 'Latte', 'Macchiato', 'Mocha']).map((item: string, itemIndex: number) => (
                       <div key={itemIndex} className="bg-coffee-cream/50 rounded-lg p-2 text-center text-sm text-coffee-accent font-medium">
                         {item}
                       </div>
                     ))}
                   </div>
-                  <Link to="/products">
+                  <Link to="/product">
                     <Button className="w-full bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream">
                       Lihat Menu {category.nama_kategori}
                     </Button>
@@ -254,7 +225,7 @@ const Categories = () => {
             </CardContent>
           </Card>
 
-          <Link to="/products" className="inline-block mt-8">
+          <Link to="/product" className="inline-block mt-8">
             <Button size="lg" className="bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream font-semibold">
               Coba Sekarang
             </Button>

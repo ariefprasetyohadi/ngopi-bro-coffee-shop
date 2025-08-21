@@ -1,26 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/contexts/CartContext';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import espressoImage from '@/assets/espresso.jpg';
 import cappuccinoImage from '@/assets/cappuccino.jpg';
 import icedCoffeeImage from '@/assets/iced-coffee.jpg';
 
+interface Category {
+  id: number;
+  nama_kategori: string;
+}
+
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
 
   const defaultImages = [espressoImage, cappuccinoImage, icedCoffeeImage];
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
         .from('produk' as any)
-        .select('*');
+        .select('*, kategori:kategori_id(nama_kategori)');
 
       if (error) {
         console.error('Error fetching products:', error);
@@ -32,7 +41,8 @@ const Products = () => {
         name: product.nama_produk || 'Product',  
         description: product.deskripsi || 'No description available',
         price: product.harga || 0,
-        image: product.image || defaultImages[index % defaultImages.length]
+        image: product.image || defaultImages[index % defaultImages.length],
+        category: product.kategori?.nama_kategori || 'Uncategorized'
       }));
 
       setProducts(formattedProducts);
@@ -42,6 +52,27 @@ const Products = () => {
       setLoading(false);
     }
   };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('kategori' as any)
+        .select('id, nama_kategori');
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return;
+      }
+
+      setCategories((data as any) || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const filteredProducts = selectedCategory === 'all' 
+    ? products 
+    : products.filter(product => (product as any).category === selectedCategory);
 
   if (loading) {
     return (
@@ -68,10 +99,29 @@ const Products = () => {
       {/* Products Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Filter/Category buttons could go here in the future */}
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-4 mb-8 justify-center">
+            <Button
+              onClick={() => setSelectedCategory('all')}
+              variant={selectedCategory === 'all' ? 'default' : 'outline'}
+              className={selectedCategory === 'all' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-coffee-cream'}
+            >
+              Semua Kategori
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.nama_kategori)}
+                variant={selectedCategory === category.nama_kategori ? 'default' : 'outline'}
+                className={selectedCategory === category.nama_kategori ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-primary text-coffee-primary hover:bg-coffee-primary hover:text-coffee-cream'}
+              >
+                {category.nama_kategori}
+              </Button>
+            ))}
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
