@@ -6,40 +6,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Filter, Save, Edit, Plus } from 'lucide-react';
+import { Search, Filter, Edit, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
 interface Transaction {
-  id: number;
-  transaction_id?: number;
-  pelanggan_id?: number;
-  product_name?: string;
-  quantity?: number;
-  subtotal?: number;
-  date?: string;
-  aksi?: string;
+  transaksi_id: number;
+  tanggal: string;
+  aksi: string;
+  nama_pelanggan: string;
+  nama_produk: string;
+  jumlah: number;
+  harga: number;
+  subtotal: number;
 }
 
 const Transaksi = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingStatus, setEditingStatus] = useState<{ [key: number]: string }>({});
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newTransaction, setNewTransaction] = useState<Partial<Transaction>>({});
+  const [newTransaction, setNewTransaction] = useState<{
+    nama_pelanggan: string;
+    nama_produk: string;
+    jumlah: number;
+    harga: number;
+  }>({
+    nama_pelanggan: '',
+    nama_produk: '',
+    jumlah: 1,
+    harga: 0
+  });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTransactions();
   }, []);
 
+  useEffect(() => {
+    filterTransactions();
+  }, [transactions, statusFilter]);
+
   const fetchTransactions = async () => {
     try {
+      // Use type assertion to work around TypeScript limitations with views
       const { data, error } = await supabase
-        .from('transaksi' as any)
-        .select('*');
+        .from('v_transaksi_lengkap' as any)
+        .select('*')
+        .order('tanggal', { ascending: false });
 
       if (error) {
         console.error('Error fetching transactions:', error);
@@ -51,25 +68,18 @@ const Transaksi = () => {
         return;
       }
 
-      const formattedTransactions: Transaction[] = data.map((transaction: any) => ({
-        id: transaction.id,
-        transaction_id: transaction.id,
-        pelanggan_id: transaction.pelanggan_id,
-        product_name: 'Product ' + (transaction.produk_id || 'Unknown'),
-        quantity: transaction.Jumlah || 0,
-        subtotal: transaction.subtotal || 0,
-        date: transaction.tanggal || new Date().toISOString().split('T')[0],
-        aksi: transaction.aksi || 'Pending'
+      const formattedData: Transaction[] = (data || []).map((item: any) => ({
+        transaksi_id: item.transaksi_id,
+        tanggal: item.tanggal,
+        aksi: item.aksi,
+        nama_pelanggan: item.nama_pelanggan,
+        nama_produk: item.nama_produk,
+        jumlah: item.jumlah,
+        harga: item.harga,
+        subtotal: item.subtotal
       }));
 
-      setTransactions(formattedTransactions);
-      
-      // Initialize editing status
-      const initialStatus: { [key: number]: string } = {};
-      formattedTransactions.forEach(transaction => {
-        initialStatus[transaction.id] = transaction.aksi || 'Pending';
-      });
-      setEditingStatus(initialStatus);
+      setTransactions(formattedData);
     } catch (error) {
       console.error('Error fetching transactions:', error);
     } finally {
@@ -77,11 +87,12 @@ const Transaksi = () => {
     }
   };
 
-  const handleStatusChange = (transactionId: number, newStatus: string) => {
-    setEditingStatus(prev => ({
-      ...prev,
-      [transactionId]: newStatus
-    }));
+  const filterTransactions = () => {
+    if (statusFilter === 'all') {
+      setFilteredTransactions(transactions);
+    } else {
+      setFilteredTransactions(transactions.filter(t => t.aksi.toLowerCase() === statusFilter.toLowerCase()));
+    }
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -93,17 +104,13 @@ const Transaksi = () => {
     if (!editingTransaction) return;
 
     try {
+      // Use type assertion to work around TypeScript limitations
       const { error } = await supabase
         .from('transaksi' as any)
         .update({
-          pelanggan_id: editingTransaction.pelanggan_id,
-          produk_id: parseInt(editingTransaction.product_name?.replace('Product ', '') || '0'),
-          Jumlah: editingTransaction.quantity,
-          subtotal: editingTransaction.subtotal,
-          tanggal: editingTransaction.date,
           aksi: editingTransaction.aksi
         })
-        .eq('id', editingTransaction.id);
+        .eq('id', editingTransaction.transaksi_id);
 
       if (error) {
         console.error('Error updating transaction:', error);
@@ -129,15 +136,17 @@ const Transaksi = () => {
 
   const handleAddTransaction = async () => {
     try {
+      const subtotal = newTransaction.jumlah * newTransaction.harga;
+      
       const { error } = await supabase
         .from('transaksi' as any)
         .insert({
-          pelanggan_id: newTransaction.pelanggan_id,
-          produk_id: parseInt(newTransaction.product_name?.replace('Product ', '') || '1'),
-          Jumlah: newTransaction.quantity || 1,
-          subtotal: newTransaction.subtotal || 0,
+          pelanggan_id: 1, // Default customer ID, you might want to make this dynamic
+          produk_id: 1, // Default product ID, you might want to make this dynamic
+          Jumlah: newTransaction.jumlah,
+          subtotal: subtotal,
           tanggal: new Date().toISOString().split('T')[0],
-          aksi: 'Pending'
+          aksi: 'proses'
         });
 
       if (error) {
@@ -156,7 +165,12 @@ const Transaksi = () => {
       });
 
       setIsAddDialogOpen(false);
-      setNewTransaction({});
+      setNewTransaction({
+        nama_pelanggan: '',
+        nama_produk: '',
+        jumlah: 1,
+        harga: 0
+      });
       fetchTransactions();
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -202,6 +216,21 @@ const Transaksi = () => {
                 className="w-full pl-10 pr-4 py-2 border border-coffee-accent/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-coffee-primary"
               />
             </div>
+            
+            {/* Status Filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="selesai">Selesai</SelectItem>
+                <SelectItem value="proses">Proses</SelectItem>
+                <SelectItem value="batal">Batal</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-coffee-primary text-coffee-cream hover:bg-coffee-primary/90">
@@ -215,43 +244,41 @@ const Transaksi = () => {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="pelanggan_id" className="text-right">ID Pelanggan</Label>
+                    <Label htmlFor="nama_pelanggan" className="text-right">Nama Pelanggan</Label>
                     <Input
-                      id="pelanggan_id"
-                      type="number"
+                      id="nama_pelanggan"
                       className="col-span-3"
-                      value={newTransaction.pelanggan_id || ''}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, pelanggan_id: parseInt(e.target.value) }))}
+                      value={newTransaction.nama_pelanggan}
+                      onChange={(e) => setNewTransaction(prev => ({ ...prev, nama_pelanggan: e.target.value }))}
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="product_name" className="text-right">Produk</Label>
+                    <Label htmlFor="nama_produk" className="text-right">Nama Produk</Label>
                     <Input
-                      id="product_name"
+                      id="nama_produk"
                       className="col-span-3"
-                      placeholder="Product 1"
-                      value={newTransaction.product_name || ''}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, product_name: e.target.value }))}
+                      value={newTransaction.nama_produk}
+                      onChange={(e) => setNewTransaction(prev => ({ ...prev, nama_produk: e.target.value }))}
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="quantity" className="text-right">Jumlah</Label>
+                    <Label htmlFor="jumlah" className="text-right">Jumlah</Label>
                     <Input
-                      id="quantity"
+                      id="jumlah"
                       type="number"
                       className="col-span-3"
-                      value={newTransaction.quantity || ''}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, quantity: parseInt(e.target.value) }))}
+                      value={newTransaction.jumlah}
+                      onChange={(e) => setNewTransaction(prev => ({ ...prev, jumlah: parseInt(e.target.value) }))}
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="subtotal" className="text-right">Subtotal</Label>
+                    <Label htmlFor="harga" className="text-right">Harga Satuan</Label>
                     <Input
-                      id="subtotal"
+                      id="harga"
                       type="number"
                       className="col-span-3"
-                      value={newTransaction.subtotal || ''}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, subtotal: parseFloat(e.target.value) }))}
+                      value={newTransaction.harga}
+                      onChange={(e) => setNewTransaction(prev => ({ ...prev, harga: parseFloat(e.target.value) }))}
                     />
                   </div>
                 </div>
@@ -268,30 +295,32 @@ const Transaksi = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>ID Pelanggan</TableHead>
-                  <TableHead>Produk</TableHead>
-                  <TableHead>Jumlah</TableHead>
-                  <TableHead>Subtotal</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>ID Transaksi</TableHead>
+                  <TableHead>Tanggal Transaksi</TableHead>
+                  <TableHead>Nama Pelanggan</TableHead>
+                  <TableHead>Produk yang Dibeli</TableHead>
+                  <TableHead>Jumlah Produk</TableHead>
+                  <TableHead>Harga Satuan</TableHead>
+                  <TableHead>Total Harga</TableHead>
+                  <TableHead>Status Transaksi</TableHead>
                   <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">{transaction.transaction_id}</TableCell>
-                    <TableCell>{transaction.pelanggan_id || 'N/A'}</TableCell>
-                    <TableCell>{transaction.product_name}</TableCell>
-                    <TableCell>{transaction.quantity}</TableCell>
+                {filteredTransactions.map((transaction, index) => (
+                  <TableRow key={`${transaction.transaksi_id}-${index}`}>
+                    <TableCell className="font-medium">{transaction.transaksi_id}</TableCell>
+                    <TableCell>{transaction.tanggal}</TableCell>
+                    <TableCell>{transaction.nama_pelanggan}</TableCell>
+                    <TableCell>{transaction.nama_produk}</TableCell>
+                    <TableCell>{transaction.jumlah}</TableCell>
+                    <TableCell>Rp {transaction.harga?.toLocaleString('id-ID')}</TableCell>
                     <TableCell>Rp {transaction.subtotal?.toLocaleString('id-ID')}</TableCell>
-                    <TableCell>{transaction.date}</TableCell>
                     <TableCell>
                       <Badge 
                         variant={
-                          transaction.aksi === 'Selesai' ? 'default' : 
-                          transaction.aksi === 'Pending' ? 'secondary' : 
+                          transaction.aksi === 'selesai' ? 'default' : 
+                          transaction.aksi === 'proses' ? 'secondary' : 
                           'destructive'
                         }
                       >
@@ -318,67 +347,85 @@ const Transaksi = () => {
                           {editingTransaction && (
                             <div className="grid gap-4 py-4">
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit_pelanggan_id" className="text-right">ID Pelanggan</Label>
+                                <Label htmlFor="edit_id" className="text-right">ID Transaksi</Label>
                                 <Input
-                                  id="edit_pelanggan_id"
+                                  id="edit_id"
+                                  className="col-span-3"
+                                  value={editingTransaction.transaksi_id}
+                                  disabled
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit_nama_pelanggan" className="text-right">Nama Pelanggan</Label>
+                                <Input
+                                  id="edit_nama_pelanggan"
+                                  className="col-span-3"
+                                  value={editingTransaction.nama_pelanggan}
+                                  disabled
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit_nama_produk" className="text-right">Produk</Label>
+                                <Input
+                                  id="edit_nama_produk"
+                                  className="col-span-3"
+                                  value={editingTransaction.nama_produk}
+                                  disabled
+                                />
+                              </div>
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit_jumlah" className="text-right">Jumlah</Label>
+                                <Input
+                                  id="edit_jumlah"
                                   type="number"
                                   className="col-span-3"
-                                  value={editingTransaction.pelanggan_id || ''}
-                                  onChange={(e) => setEditingTransaction(prev => prev ? ({ ...prev, pelanggan_id: parseInt(e.target.value) }) : null)}
+                                  value={editingTransaction.jumlah}
+                                  disabled
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit_product_name" className="text-right">Produk</Label>
+                                <Label htmlFor="edit_harga" className="text-right">Harga Satuan</Label>
                                 <Input
-                                  id="edit_product_name"
-                                  className="col-span-3"
-                                  value={editingTransaction.product_name || ''}
-                                  onChange={(e) => setEditingTransaction(prev => prev ? ({ ...prev, product_name: e.target.value }) : null)}
-                                />
-                              </div>
-                              <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit_quantity" className="text-right">Jumlah</Label>
-                                <Input
-                                  id="edit_quantity"
+                                  id="edit_harga"
                                   type="number"
                                   className="col-span-3"
-                                  value={editingTransaction.quantity || ''}
-                                  onChange={(e) => setEditingTransaction(prev => prev ? ({ ...prev, quantity: parseInt(e.target.value) }) : null)}
+                                  value={editingTransaction.harga}
+                                  disabled
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit_subtotal" className="text-right">Subtotal</Label>
+                                <Label htmlFor="edit_subtotal" className="text-right">Total Harga</Label>
                                 <Input
                                   id="edit_subtotal"
                                   type="number"
                                   className="col-span-3"
-                                  value={editingTransaction.subtotal || ''}
-                                  onChange={(e) => setEditingTransaction(prev => prev ? ({ ...prev, subtotal: parseFloat(e.target.value) }) : null)}
+                                  value={editingTransaction.subtotal}
+                                  disabled
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit_date" className="text-right">Tanggal</Label>
+                                <Label htmlFor="edit_tanggal" className="text-right">Tanggal</Label>
                                 <Input
-                                  id="edit_date"
+                                  id="edit_tanggal"
                                   type="date"
                                   className="col-span-3"
-                                  value={editingTransaction.date || ''}
-                                  onChange={(e) => setEditingTransaction(prev => prev ? ({ ...prev, date: e.target.value }) : null)}
+                                  value={editingTransaction.tanggal}
+                                  disabled
                                 />
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="edit_status" className="text-right">Status</Label>
                                 <Select 
-                                  value={editingTransaction.aksi || 'Pending'} 
+                                  value={editingTransaction.aksi} 
                                   onValueChange={(value) => setEditingTransaction(prev => prev ? ({ ...prev, aksi: value }) : null)}
                                 >
                                   <SelectTrigger className="col-span-3">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="Pending">Pending</SelectItem>
-                                    <SelectItem value="Selesai">Selesai</SelectItem>
-                                    <SelectItem value="Batal">Batal</SelectItem>
+                                    <SelectItem value="proses">Proses</SelectItem>
+                                    <SelectItem value="selesai">Selesai</SelectItem>
+                                    <SelectItem value="batal">Batal</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -405,15 +452,15 @@ const Transaksi = () => {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
               <h3 className="text-2xl font-bold text-coffee-primary">
-                {transactions.filter(t => t.aksi === 'Selesai').length}
+                {transactions.filter(t => t.aksi === 'selesai').length}
               </h3>
               <p className="text-coffee-accent">Transaksi Selesai</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
               <h3 className="text-2xl font-bold text-coffee-primary">
-                {transactions.filter(t => t.aksi === 'Pending').length}
+                {transactions.filter(t => t.aksi === 'proses').length}
               </h3>
-              <p className="text-coffee-accent">Transaksi Pending</p>
+              <p className="text-coffee-accent">Transaksi Proses</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
               <h3 className="text-2xl font-bold text-coffee-primary">
