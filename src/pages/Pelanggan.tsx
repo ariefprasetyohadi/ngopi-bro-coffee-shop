@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserPlus, Search, Filter, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,6 +26,13 @@ const Pelanggan = () => {
   const [loading, setLoading] = useState(true);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    nama_pelanggan: '',
+    email: '',
+    telepon: '',
+    status: 'reguler'
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,6 +121,46 @@ const Pelanggan = () => {
     }
   };
 
+  const handleAddCustomer = async () => {
+    try {
+      const { error } = await supabase
+        .from('pelanggan')
+        .insert({
+          nama_pelanggan: newCustomer.nama_pelanggan,
+          email: newCustomer.email,
+          telepon: newCustomer.telepon,
+          status: newCustomer.status
+        });
+
+      if (error) {
+        console.error('Error adding customer:', error);
+        toast({
+          title: "Error",
+          description: "Gagal menambahkan pelanggan baru",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Pelanggan berhasil ditambahkan"
+      });
+
+      // Reset form
+      setNewCustomer({
+        nama_pelanggan: '',
+        email: '',
+        telepon: '',
+        status: 'reguler'
+      });
+      setAddDialogOpen(false);
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error adding customer:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -134,10 +183,75 @@ const Pelanggan = () => {
                 Kelola informasi pelanggan Ngopi Bro
               </p>
             </div>
-            <Button className="bg-coffee-cream text-coffee-dark hover:bg-coffee-cream/90">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Tambah Pelanggan
-            </Button>
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-coffee-cream text-coffee-dark hover:bg-coffee-cream/90">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Tambah Pelanggan
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tambah Pelanggan Baru</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add_name" className="text-right">Nama</Label>
+                    <Input
+                      id="add_name"
+                      className="col-span-3"
+                      value={newCustomer.nama_pelanggan}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, nama_pelanggan: e.target.value }))}
+                      placeholder="Masukkan nama pelanggan"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add_email" className="text-right">Email</Label>
+                    <Input
+                      id="add_email"
+                      type="email"
+                      className="col-span-3"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Masukkan email"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add_phone" className="text-right">Telepon</Label>
+                    <Input
+                      id="add_phone"
+                      className="col-span-3"
+                      value={newCustomer.telepon}
+                      onChange={(e) => setNewCustomer(prev => ({ ...prev, telepon: e.target.value }))}
+                      placeholder="Masukkan nomor telepon"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="add_status" className="text-right">Status</Label>
+                    <Select 
+                      value={newCustomer.status} 
+                      onValueChange={(value) => setNewCustomer(prev => ({ ...prev, status: value }))}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="reguler">Reguler</SelectItem>
+                        <SelectItem value="vip">VIP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button onClick={handleAddCustomer} className="bg-coffee-primary hover:bg-coffee-primary/90">
+                    Simpan
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </section>

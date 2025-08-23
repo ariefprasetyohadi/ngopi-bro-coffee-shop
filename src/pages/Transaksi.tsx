@@ -10,6 +10,21 @@ import { Search, Filter, Edit, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
+interface Customer {
+  id: number;
+  nama_pelanggan: string;
+  email?: string;
+  telepon?: string;
+  status?: string;
+}
+
+interface Product {
+  id: number;
+  nama_produk: string;
+  harga: number;
+  stok: number;
+}
+
 interface Transaction {
   transaksi_id: number;
   tanggal: string;
@@ -29,21 +44,30 @@ const Transaksi = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newTransaction, setNewTransaction] = useState<{
-    nama_pelanggan: string;
-    nama_produk: string;
-    jumlah: number;
-    harga: number;
-  }>({
+  
+  // Customer and Product data
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  
+  // Form data
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [transactionStatus, setTransactionStatus] = useState<string>('proses');
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
     nama_pelanggan: '',
-    nama_produk: '',
-    jumlah: 1,
-    harga: 0
+    email: '',
+    telepon: '',
+    status: 'reguler'
   });
+  
   const { toast } = useToast();
 
   useEffect(() => {
     fetchTransactions();
+    fetchCustomers();
+    fetchProducts();
   }, []);
 
   useEffect(() => {
@@ -84,6 +108,40 @@ const Transaksi = () => {
       console.error('Error fetching transactions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pelanggan')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching customers:', error);
+        return;
+      }
+
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('produk')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching products:', error);
+        return;
+      }
+
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
     }
   };
 
@@ -136,17 +194,64 @@ const Transaksi = () => {
 
   const handleAddTransaction = async () => {
     try {
-      const subtotal = newTransaction.jumlah * newTransaction.harga;
+      let customerId = selectedCustomerId;
+      
+      // If creating new customer, insert it first
+      if (showNewCustomerForm && newCustomer.nama_pelanggan) {
+        const { data: customerData, error: customerError } = await supabase
+          .from('pelanggan')
+          .insert({
+            nama_pelanggan: newCustomer.nama_pelanggan,
+            email: newCustomer.email,
+            telepon: newCustomer.telepon,
+            status: newCustomer.status
+          })
+          .select()
+          .single();
+
+        if (customerError) {
+          console.error('Error adding customer:', customerError);
+          toast({
+            title: "Error",
+            description: "Gagal menambahkan pelanggan baru",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        customerId = customerData.id;
+      }
+
+      if (!customerId || !selectedProductId) {
+        toast({
+          title: "Error",
+          description: "Silakan pilih pelanggan dan produk",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const selectedProduct = products.find(p => p.id === selectedProductId);
+      if (!selectedProduct) {
+        toast({
+          title: "Error",
+          description: "Produk tidak ditemukan",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const subtotal = quantity * selectedProduct.harga;
       
       const { error } = await supabase
-        .from('transaksi' as any)
+        .from('transaksi')
         .insert({
-          pelanggan_id: 1, // Default customer ID, you might want to make this dynamic
-          produk_id: 1, // Default product ID, you might want to make this dynamic
-          Jumlah: newTransaction.jumlah,
+          pelanggan_id: customerId,
+          produk_id: selectedProductId,
+          Jumlah: quantity,
           subtotal: subtotal,
           tanggal: new Date().toISOString().split('T')[0],
-          aksi: 'proses'
+          aksi: transactionStatus
         });
 
       if (error) {
@@ -164,17 +269,31 @@ const Transaksi = () => {
         description: "Transaksi berhasil ditambahkan"
       });
 
+      // Reset form
       setIsAddDialogOpen(false);
-      setNewTransaction({
+      setSelectedCustomerId(null);
+      setSelectedProductId(null);
+      setQuantity(1);
+      setTransactionStatus('proses');
+      setShowNewCustomerForm(false);
+      setNewCustomer({
         nama_pelanggan: '',
-        nama_produk: '',
-        jumlah: 1,
-        harga: 0
+        email: '',
+        telepon: '',
+        status: 'reguler'
       });
+      
+      // Refresh data
       fetchTransactions();
+      fetchCustomers();
     } catch (error) {
       console.error('Error adding transaction:', error);
     }
+  };
+
+  const calculateSubtotal = () => {
+    const selectedProduct = products.find(p => p.id === selectedProductId);
+    return selectedProduct ? quantity * selectedProduct.harga : 0;
   };
 
   if (loading) {
@@ -243,43 +362,154 @@ const Transaksi = () => {
                   <DialogTitle>Tambahkan Pesanan Baru</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                  {/* Customer Selection */}
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nama_pelanggan" className="text-right">Nama Pelanggan</Label>
-                    <Input
-                      id="nama_pelanggan"
-                      className="col-span-3"
-                      value={newTransaction.nama_pelanggan}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, nama_pelanggan: e.target.value }))}
-                    />
+                    <Label htmlFor="customer_select" className="text-right">Pelanggan</Label>
+                    <div className="col-span-3">
+                      <Select 
+                        value={showNewCustomerForm ? 'new' : selectedCustomerId?.toString() || ''} 
+                        onValueChange={(value) => {
+                          if (value === 'new') {
+                            setShowNewCustomerForm(true);
+                            setSelectedCustomerId(null);
+                          } else {
+                            setShowNewCustomerForm(false);
+                            setSelectedCustomerId(parseInt(value));
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih pelanggan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">+ Pelanggan Baru</SelectItem>
+                          {customers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id.toString()}>
+                              {customer.nama_pelanggan}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
+                  {/* New Customer Form */}
+                  {showNewCustomerForm && (
+                    <>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new_customer_name" className="text-right">Nama Pelanggan</Label>
+                        <Input
+                          id="new_customer_name"
+                          className="col-span-3"
+                          value={newCustomer.nama_pelanggan}
+                          onChange={(e) => setNewCustomer(prev => ({ ...prev, nama_pelanggan: e.target.value }))}
+                          placeholder="Masukkan nama pelanggan"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new_customer_email" className="text-right">Email</Label>
+                        <Input
+                          id="new_customer_email"
+                          type="email"
+                          className="col-span-3"
+                          value={newCustomer.email}
+                          onChange={(e) => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="Masukkan email"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new_customer_phone" className="text-right">Telepon</Label>
+                        <Input
+                          id="new_customer_phone"
+                          className="col-span-3"
+                          value={newCustomer.telepon}
+                          onChange={(e) => setNewCustomer(prev => ({ ...prev, telepon: e.target.value }))}
+                          placeholder="Masukkan nomor telepon"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new_customer_status" className="text-right">Status</Label>
+                        <Select 
+                          value={newCustomer.status} 
+                          onValueChange={(value) => setNewCustomer(prev => ({ ...prev, status: value }))}
+                        >
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="reguler">Reguler</SelectItem>
+                            <SelectItem value="vip">VIP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Product Selection */}
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nama_produk" className="text-right">Nama Produk</Label>
-                    <Input
-                      id="nama_produk"
-                      className="col-span-3"
-                      value={newTransaction.nama_produk}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, nama_produk: e.target.value }))}
-                    />
+                    <Label htmlFor="product_select" className="text-right">Produk</Label>
+                    <Select 
+                      value={selectedProductId?.toString() || ''} 
+                      onValueChange={(value) => setSelectedProductId(parseInt(value))}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Pilih produk" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
+                            {product.nama_produk} - Rp {product.harga?.toLocaleString('id-ID')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {/* Quantity */}
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="jumlah" className="text-right">Jumlah</Label>
+                    <Label htmlFor="quantity" className="text-right">Jumlah</Label>
                     <Input
-                      id="jumlah"
+                      id="quantity"
                       type="number"
+                      min="1"
                       className="col-span-3"
-                      value={newTransaction.jumlah}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, jumlah: parseInt(e.target.value) }))}
+                      value={quantity}
+                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                     />
                   </div>
+
+                  {/* Transaction Status */}
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="harga" className="text-right">Harga Satuan</Label>
-                    <Input
-                      id="harga"
-                      type="number"
-                      className="col-span-3"
-                      value={newTransaction.harga}
-                      onChange={(e) => setNewTransaction(prev => ({ ...prev, harga: parseFloat(e.target.value) }))}
-                    />
+                    <Label htmlFor="transaction_status" className="text-right">Status Transaksi</Label>
+                    <Select 
+                      value={transactionStatus} 
+                      onValueChange={(value) => setTransactionStatus(value)}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="proses">Proses</SelectItem>
+                        <SelectItem value="selesai">Selesai</SelectItem>
+                        <SelectItem value="batal">Batal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Subtotal Display */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Subtotal</Label>
+                    <div className="col-span-3 text-lg font-semibold">
+                      Rp {calculateSubtotal().toLocaleString('id-ID')}
+                    </div>
+                  </div>
+
+                  {/* Date Display */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Tanggal</Label>
+                    <div className="col-span-3 text-sm text-muted-foreground">
+                      {new Date().toLocaleDateString('id-ID')}
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

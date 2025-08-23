@@ -14,153 +14,309 @@ export type Database = {
   }
   public: {
     Tables: {
-      category: {
+      kategori: {
         Row: {
-          id: number | null
-          nama: string
+          deskripsi_kategori: string | null
+          id: number
+          nama_kategori: string | null
         }
         Insert: {
-          id?: number | null
-          nama: string
+          deskripsi_kategori?: string | null
+          id?: number
+          nama_kategori?: string | null
         }
         Update: {
-          id?: number | null
-          nama?: string
+          deskripsi_kategori?: string | null
+          id?: number
+          nama_kategori?: string | null
         }
         Relationships: []
       }
-      customer: {
+      login: {
         Row: {
-          customer_id: number
-          customer_name: string | null
-          email: string | null
-          id: number | null
-          phone: string | null
-          status: string | null
-        }
-        Insert: {
-          customer_id?: number
-          customer_name?: string | null
-          email?: string | null
-          id?: number | null
-          phone?: string | null
-          status?: string | null
-        }
-        Update: {
-          customer_id?: number
-          customer_name?: string | null
-          email?: string | null
-          id?: number | null
-          phone?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
-      detail_transaction: {
-        Row: {
-          action: string | null
-          customer: string | null
-          date: string | null
-          no: number
-          product_id: number | null
-          quantity: number | null
-          subtotal: number | null
-          transaction_id: number
-        }
-        Insert: {
-          action?: string | null
-          customer?: string | null
-          date?: string | null
-          no?: number
-          product_id?: number | null
-          quantity?: number | null
-          subtotal?: number | null
-          transaction_id?: number
-        }
-        Update: {
-          action?: string | null
-          customer?: string | null
-          date?: string | null
-          no?: number
-          product_id?: number | null
-          quantity?: number | null
-          subtotal?: number | null
-          transaction_id?: number
-        }
-        Relationships: []
-      }
-      login_admin: {
-        Row: {
+          email: string
           id: number
           password: string | null
-          user_name: string
         }
         Insert: {
+          email: string
           id?: number
           password?: string | null
-          user_name: string
         }
         Update: {
+          email?: string
           id?: number
           password?: string | null
-          user_name?: string
         }
         Relationships: []
       }
-      product: {
+      pelanggan: {
         Row: {
-          category_id: number | null
-          description: string | null
-          id: number | null
-          image: string | null
-          price: number | null
-          product_name: string | null
-          stock: number | null
+          email: string | null
+          id: number
+          nama_pelanggan: string | null
+          status: string | null
+          telepon: string | null
         }
         Insert: {
-          category_id?: number | null
-          description?: string | null
-          id?: number | null
-          image?: string | null
-          price?: number | null
-          product_name?: string | null
-          stock?: number | null
+          email?: string | null
+          id?: number
+          nama_pelanggan?: string | null
+          status?: string | null
+          telepon?: string | null
         }
         Update: {
-          category_id?: number | null
-          description?: string | null
-          id?: number | null
-          image?: string | null
-          price?: number | null
-          product_name?: string | null
-          stock?: number | null
+          email?: string | null
+          id?: number
+          nama_pelanggan?: string | null
+          status?: string | null
+          telepon?: string | null
         }
         Relationships: []
+      }
+      produk: {
+        Row: {
+          deskripsi: string | null
+          harga: number | null
+          id: number
+          image: string | null
+          kategori_id: number | null
+          nama_produk: string | null
+          stok: number | null
+        }
+        Insert: {
+          deskripsi?: string | null
+          harga?: number | null
+          id?: number
+          image?: string | null
+          kategori_id?: number | null
+          nama_produk?: string | null
+          stok?: number | null
+        }
+        Update: {
+          deskripsi?: string | null
+          harga?: number | null
+          id?: number
+          image?: string | null
+          kategori_id?: number | null
+          nama_produk?: string | null
+          stok?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_produk_kategori"
+            columns: ["kategori_id"]
+            isOneToOne: false
+            referencedRelation: "kategori"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transaksi: {
         Row: {
-          id: number | null
-          pelanggan_id: number
+          aksi: string | null
+          id: number
+          Jumlah: number | null
+          pelanggan_id: number | null
+          produk_id: number | null
+          subtotal: number | null
           tanggal: string | null
-          total: number | null
         }
         Insert: {
-          id?: number | null
-          pelanggan_id: number
+          aksi?: string | null
+          id?: number
+          Jumlah?: number | null
+          pelanggan_id?: number | null
+          produk_id?: number | null
+          subtotal?: number | null
           tanggal?: string | null
-          total?: number | null
         }
         Update: {
-          id?: number | null
-          pelanggan_id?: number
+          aksi?: string | null
+          id?: number
+          Jumlah?: number | null
+          pelanggan_id?: number | null
+          produk_id?: number | null
+          subtotal?: number | null
           tanggal?: string | null
-          total?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_transaksi_pelanggan"
+            columns: ["pelanggan_id"]
+            isOneToOne: false
+            referencedRelation: "pelanggan"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_transaksi_pelanggan"
+            columns: ["pelanggan_id"]
+            isOneToOne: false
+            referencedRelation: "v_pelanggan_total"
+            referencedColumns: ["pelanggan_id"]
+          },
+          {
+            foreignKeyName: "transaksi_produk_id_fkey"
+            columns: ["produk_id"]
+            isOneToOne: false
+            referencedRelation: "produk"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaksi_produk_id_fkey"
+            columns: ["produk_id"]
+            isOneToOne: false
+            referencedRelation: "v_produk_stok"
+            referencedColumns: ["produk_id"]
+          },
+        ]
+      }
+      transaksi_items: {
+        Row: {
+          harga: number
+          id: number
+          jumlah: number
+          produk_id: number | null
+          subtotal: number | null
+          transaksi_id: number | null
+        }
+        Insert: {
+          harga: number
+          id?: number
+          jumlah: number
+          produk_id?: number | null
+          subtotal?: number | null
+          transaksi_id?: number | null
+        }
+        Update: {
+          harga?: number
+          id?: number
+          jumlah?: number
+          produk_id?: number | null
+          subtotal?: number | null
+          transaksi_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaksi_items_produk_id_fkey"
+            columns: ["produk_id"]
+            isOneToOne: false
+            referencedRelation: "produk"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaksi_items_produk_id_fkey"
+            columns: ["produk_id"]
+            isOneToOne: false
+            referencedRelation: "v_produk_stok"
+            referencedColumns: ["produk_id"]
+          },
+          {
+            foreignKeyName: "transaksi_items_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "transaksi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaksi_items_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "v_ringkasan"
+            referencedColumns: ["transaksi_id"]
+          },
+          {
+            foreignKeyName: "transaksi_items_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "v_transaksi_detail"
+            referencedColumns: ["transaksi_id"]
+          },
+          {
+            foreignKeyName: "transaksi_items_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "v_transaksi_lengkap"
+            referencedColumns: ["transaksi_id"]
+          },
+          {
+            foreignKeyName: "transaksi_items_transaksi_id_fkey"
+            columns: ["transaksi_id"]
+            isOneToOne: false
+            referencedRelation: "v_transaksi_total"
+            referencedColumns: ["transaksi_id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      v_pelanggan_total: {
+        Row: {
+          nama_pelanggan: string | null
+          pelanggan_id: number | null
+          total_belanja: number | null
+        }
+        Relationships: []
+      }
+      v_produk_stok: {
+        Row: {
+          harga: number | null
+          nama_kategori: string | null
+          nama_produk: string | null
+          produk_id: number | null
+          stok: number | null
+          stok_sisa: number | null
+          total_terjual: number | null
+        }
+        Relationships: []
+      }
+      v_ringkasan: {
+        Row: {
+          aksi: string | null
+          nama_pelanggan: string | null
+          produk_dibeli: string | null
+          tanggal: string | null
+          total_belanja: number | null
+          transaksi_id: number | null
+        }
+        Relationships: []
+      }
+      v_transaksi_detail: {
+        Row: {
+          aksi: string | null
+          harga: number | null
+          jumlah: number | null
+          nama_pelanggan: string | null
+          nama_produk: string | null
+          subtotal: number | null
+          tanggal: string | null
+          transaksi_id: number | null
+        }
+        Relationships: []
+      }
+      v_transaksi_lengkap: {
+        Row: {
+          aksi: string | null
+          harga: number | null
+          jumlah: number | null
+          nama_pelanggan: string | null
+          nama_produk: string | null
+          subtotal: number | null
+          tanggal: string | null
+          transaksi_id: number | null
+        }
+        Relationships: []
+      }
+      v_transaksi_total: {
+        Row: {
+          aksi: string | null
+          nama_pelanggan: string | null
+          tanggal: string | null
+          total_belanja: number | null
+          transaksi_id: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
