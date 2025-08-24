@@ -61,7 +61,7 @@ const Pelanggan = () => {
         customer_name: customer.nama_pelanggan,
         email: customer.email,
         phone: customer.telepon,
-        status: customer.status || 'Regular'
+        status: customer.status || 'reguler'
       }));
 
       setCustomers(formattedCustomers);
@@ -79,7 +79,7 @@ const Pelanggan = () => {
       setFilteredCustomers(customers);
     } else {
       setFilteredCustomers(customers.filter(customer => 
-        (customer.status || 'Regular').toLowerCase() === status.toLowerCase()
+        (customer.status || 'reguler').toLowerCase() === status.toLowerCase()
       ));
     }
   };
@@ -277,7 +277,7 @@ const Pelanggan = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua</SelectItem>
-                  <SelectItem value="regular">Reguler</SelectItem>
+                  <SelectItem value="reguler">Reguler</SelectItem>
                   <SelectItem value="vip">VIP</SelectItem>
                 </SelectContent>
               </Select>
@@ -305,12 +305,12 @@ const Pelanggan = () => {
                     <TableCell className="text-coffee-accent">{customer.email || 'No Email'}</TableCell>
                     <TableCell>{customer.phone || 'No Phone'}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={customer.status === 'VIP' ? "default" : "outline"}
-                        className={customer.status === 'VIP' ? "bg-coffee-primary text-coffee-cream" : ""}
-                      >
-                        {customer.status || 'Regular'}
-                      </Badge>
+                       <Badge 
+                         variant={customer.status === 'vip' ? "default" : "outline"}
+                         className={customer.status === 'vip' ? "bg-coffee-primary text-coffee-cream" : ""}
+                       >
+                         {customer.status === 'vip' ? 'VIP' : 'Reguler'}
+                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -360,16 +360,23 @@ const Pelanggan = () => {
                                   placeholder="Nomor telepon"
                                 />
                               </div>
-                              <div>
-                                <label className="text-sm font-medium">Status</label>
-                                <Input
-                                  value={editingCustomer?.status || ''}
-                                  onChange={(e) => setEditingCustomer(prev => 
-                                    prev ? { ...prev, status: e.target.value } : null
-                                  )}
-                                  placeholder="Status pelanggan"
-                                />
-                              </div>
+                               <div>
+                                 <label className="text-sm font-medium">Status</label>
+                                 <Select
+                                   value={editingCustomer?.status || 'reguler'}
+                                   onValueChange={(value) => setEditingCustomer(prev => 
+                                     prev ? { ...prev, status: value } : null
+                                   )}
+                                 >
+                                   <SelectTrigger>
+                                     <SelectValue />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     <SelectItem value="reguler">Reguler</SelectItem>
+                                     <SelectItem value="vip">VIP</SelectItem>
+                                   </SelectContent>
+                                 </Select>
+                               </div>
                               <div className="flex gap-2 pt-4">
                                 <Button 
                                   onClick={handleEditCustomer}
@@ -415,7 +422,7 @@ const Pelanggan = () => {
             </div>
             <div className="bg-white p-6 rounded-lg shadow-coffee text-center">
               <h3 className="text-2xl font-bold text-coffee-primary">
-                {customers.filter(c => (c.status || '').toLowerCase() === 'regular').length}
+                {customers.filter(c => (c.status || '').toLowerCase() === 'reguler').length}
               </h3>
               <p className="text-coffee-accent">Pelanggan Regular</p>
             </div>
