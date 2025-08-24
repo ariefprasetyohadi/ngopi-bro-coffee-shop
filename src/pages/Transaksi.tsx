@@ -354,7 +354,7 @@ const Transaksi = () => {
               <DialogTrigger asChild>
                 <Button className="bg-coffee-primary text-coffee-cream hover:bg-coffee-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
-                  + Tambahkan Pesanan
+                  Tambahkan Pesanan
                 </Button>
               </DialogTrigger>
               <DialogContent>
