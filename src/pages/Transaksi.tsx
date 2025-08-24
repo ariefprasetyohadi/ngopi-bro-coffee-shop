@@ -80,7 +80,7 @@ const Transaksi = () => {
       const { data, error } = await supabase
         .from('v_transaksi_lengkap' as any)
         .select('*')
-        .order('tanggal', { ascending: false });
+        .order('transaksi_id', { ascending: true });
 
       if (error) {
         console.error('Error fetching transactions:', error);
