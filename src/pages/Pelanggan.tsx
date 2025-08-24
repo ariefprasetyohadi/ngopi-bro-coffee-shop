@@ -297,8 +297,8 @@ const Pelanggan = () => {
                   <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredCustomers.map((customer) => (
+               <TableBody>
+                 {filteredCustomers.sort((a, b) => a.id - b.id).map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.id}</TableCell>
                     <TableCell>{customer.customer_name || 'No Name'}</TableCell>
