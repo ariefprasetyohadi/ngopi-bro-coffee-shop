@@ -269,35 +269,25 @@ const Pelanggan = () => {
                 className="w-full pl-10 pr-4 py-2 border border-coffee-accent/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-coffee-primary"
               />
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant={selectedStatus === 'all' ? 'default' : 'outline'}
-                onClick={() => handleStatusFilter('all')}
-                className={selectedStatus === 'all' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream'}
-              >
-                Semua
-              </Button>
-              <Button 
-                variant={selectedStatus === 'regular' ? 'default' : 'outline'}
-                onClick={() => handleStatusFilter('regular')}
-                className={selectedStatus === 'regular' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream'}
-              >
-                Regular
-              </Button>
-              <Button 
-                variant={selectedStatus === 'vip' ? 'default' : 'outline'}
-                onClick={() => handleStatusFilter('vip')}
-                className={selectedStatus === 'vip' ? 'bg-coffee-primary text-coffee-cream' : 'border-coffee-accent text-coffee-accent hover:bg-coffee-accent hover:text-coffee-cream'}
-              >
-                VIP
-              </Button>
+            <div className="w-48">
+              <Select value={selectedStatus} onValueChange={handleStatusFilter}>
+                <SelectTrigger className="border-coffee-accent">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua</SelectItem>
+                  <SelectItem value="regular">Reguler</SelectItem>
+                  <SelectItem value="vip">VIP</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {/* Customer Table */}
           <div className="bg-white rounded-lg shadow-coffee overflow-hidden">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-gray-100">
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Nama</TableHead>
