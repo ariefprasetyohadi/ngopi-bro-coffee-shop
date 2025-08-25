@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Coffee, Snowflake, Zap, Heart } from 'lucide-react';
+import { Coffee, Snowflake, UtensilsCrossed, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Categories = () => {
@@ -12,7 +12,7 @@ const Categories = () => {
   const defaultCategoryIcons = [
     <Coffee className="h-12 w-12 text-coffee-primary" />,
     <Snowflake className="h-12 w-12 text-coffee-primary" />,
-    <Zap className="h-12 w-12 text-coffee-primary" />,
+    <UtensilsCrossed className="h-12 w-12 text-coffee-primary" />,
     <Heart className="h-12 w-12 text-coffee-primary" />
   ];
 
@@ -139,7 +139,7 @@ const Categories = () => {
                       </div>
                     ))}
                   </div>
-                  <Link to="/product">
+                  <Link to={`/product?category=${encodeURIComponent(category.nama_kategori)}`}>
                     <Button className="w-full bg-gradient-button hover:bg-coffee-primary/90 text-coffee-cream">
                       Lihat Menu {category.nama_kategori}
                     </Button>

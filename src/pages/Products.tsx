@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const Products = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
 
   const defaultImages = [espressoImage, cappuccinoImage, icedCoffeeImage];
 
@@ -24,6 +26,13 @@ const Products = () => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [searchParams]);
 
   const fetchProducts = async () => {
     try {
