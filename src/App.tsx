@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import Categories from "./pages/Categories";
@@ -14,7 +13,7 @@ import Cart from "./pages/Cart";
 import About from "./pages/About";
 import Pelanggan from "./pages/Pelanggan";
 import Transaksi from "./pages/Transaksi";
-import Auth from "./pages/Auth";
+import Login from "./pages/Login";
 
 
 const queryClient = new QueryClient();
@@ -27,27 +26,22 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <div className="min-h-screen flex flex-col">
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/*" element={
-                <>
-                  <Navbar />
-                  <main className="flex-grow">
-                    <Routes>
-                      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                      <Route path="/product" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-                      <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-                      <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-                      <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
-                      <Route path="/pelanggan" element={<ProtectedRoute><Pelanggan /></ProtectedRoute>} />
-                      <Route path="/transaksi" element={<ProtectedRoute><Transaksi /></ProtectedRoute>} />
-                      <Route path="*" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                </>
-              } />
-            </Routes>
+            <Navbar />
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/product" element={<Products />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/pelanggan" element={<Pelanggan />} />
+                <Route path="/transaksi" element={<Transaksi />} />
+                <Route path="/login" element={<Login />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<Home />} />
+              </Routes>
+            </main>
+            <Footer />
           </div>
         </BrowserRouter>
       </CartProvider>
