@@ -1,13 +1,35 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Coffee } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Coffee, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { state } = useCart();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Success",
+        description: "Logged out successfully",
+      });
+      navigate('/auth');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
 
   const navItems = [
     { name: 'Beranda', path: '/' },
@@ -16,7 +38,6 @@ const Navbar = () => {
     { name: 'Pelanggan', path: '/pelanggan' },
     { name: 'Transaksi', path: '/transaksi' },
     { name: 'Tentang Kami', path: '/about' },
-    { name: 'Login', path: '/login' },
   ];
 
   return (
@@ -42,6 +63,17 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
+            {user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="bg-coffee-cream/10 border-coffee-cream text-coffee-cream hover:bg-coffee-cream hover:text-coffee-primary"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            )}
           </div>
 
           {/* Cart Button */}
